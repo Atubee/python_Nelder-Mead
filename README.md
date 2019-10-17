@@ -15,11 +15,17 @@ Enter the following command on your device (Terminal on Linux).
 ## Result by Demo
 ![Result](https://github.com/CUME-system006-150/python_Nelder-Mead/blob/master/Trajectory_of_center.png)
 
-## Requirement
- *Python 3.5.2  
- *numpy (>= 1.16.2)  
- *scipy (>= 1.2.1)  
- *matplotlib (>= 3.0.3)  
+## My environment
+---OS---  
+ * *ubuntu 16.04 LTS*
+ 
+---Language---  
+ * *Python 3.5.2*  
+ 
+---Libraries---  
+ * *numpy (== 1.16.2)*  
+ * *scipy (== 1.2.1)*  
+ * *matplotlib (== 3.0.3)*  
  
 
 
