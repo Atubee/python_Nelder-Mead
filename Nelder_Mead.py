@@ -1,20 +1,11 @@
 import numpy as np
 from BenchMark_funcs import Five_well_potential_function as target_func
-#import cv2
-#import tensorflow as tf
-
 
 class Nelder_Mead:
     def __init__(self, num_param, mean=0, sigma=1):
         self.num_param = num_param
-        """
-        self.worst = None
-        self.2th_worst = None
-        self.best = 
-        """
         self.center = None
         self.P_refl = None
-        
         self.result = None
         self.params = self.initialize_params(mean, sigma)
         
@@ -29,16 +20,10 @@ class Nelder_Mead:
     def func(self, inputs):
         y = target_func(inputs)
         result = np.concatenate([inputs, y], axis=-1)  #([p1, f(p1)],[p2, f(p2)], ..., [pm+1, f(pm+1)])
-        #print(self.result.shape)
         return result
 
     def calc(self, alpha=1):
         self.result = self.result[np.argsort(self.result[:, -1])]#sorted on f(px)
-        """
-        self.worst = result[-1]#Max score
-        self.2th_worst = result[-2]
-        self.best = result[0]#Min score
-        """
         center = np.mean(self.result[:, :self.num_param], axis=0)#, keepdims=True)#Calc center
         self.center = center
         center_h = center - self.result[-1, :self.num_param]
@@ -60,11 +45,11 @@ class Nelder_Mead:
             expand_coord = self.center + beta * self.center_h
             P_expand = self.func(expand_coord[None])[0]
             if P_expand[-1] < self.P_refl[-1]:
-                print("1-1")
+                #print("1-1")
                 self.params = np.concatenate([self.result[:-1, :self.num_param],
                                               P_expand[None, :self.num_param]], axis=0)
             else:
-                print("1-2")
+                #print("1-2")
                 self.params = np.concatenate([self.result[:-1, :self.num_param],
                                               self.P_refl[None, :self.num_param]], axis=0)
                 
@@ -72,12 +57,12 @@ class Nelder_Mead:
             contract_coord = self.center + gamma * self.center_h
             P_contract = self.func(contract_coord[None])[0]
             if P_contract[-1] < self.result[-1, -1]:
-                print("2-1")
+                #print("2-1")
                 self.params = np.concatenate([self.result[:-1, :self.num_param],
                                               P_contract[None, :self.num_param]], axis=0)
                 #print(self.params)
             else:
-                print("2-2")
+                #print("2-2")
                 reduct = self.result[:, :self.num_param] - self.result[:1, :self.num_param] 
                 self.params = self.result[:, :self.num_param] + delta * reduct
         else:
@@ -111,14 +96,12 @@ def main():
                facecolors='red',
                alpha=1)
     """
-    """
+    #"""
     ax.scatter(a.center[0],
                a.center[1],
                target_func(a.center[None])[...,0],
                facecolors='red',
                alpha=1)
-    """
-    #plt.show()
     #"""
     
     for i in range(100):
