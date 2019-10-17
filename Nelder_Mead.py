@@ -39,9 +39,6 @@ class Nelder_Mead:
     def update_opt(self, beta=2, gamma=-0.5, delta=0.5):
         self.result = self.func(self.params)
         self.calc()
-        #print(self.result)
-        #print(self.center)
-        #print(self.P_refl)
 
         if self.P_refl[-1] < self.result[-2, -1] and self.P_refl[-1] >= self.result[0, -1]:
             #print("0")
@@ -72,10 +69,6 @@ class Nelder_Mead:
                 #print(self.params)
             else:
                 #print("2-2")
-                """
-                reduct = self.result[1:, :self.num_param] - self.result[:1, :self.num_param]
-                reduct = self.result[1:, :self.num_param] + delta * reduct
-                """
                 reduct = (self.result[1:, :self.num_param] + self.result[:1, :self.num_param]) * delta
                 #self.result[1:, :self.num_param] + delta * reduct
                 self.params = np.concatenate([self.result[:1, :self.num_param],
@@ -91,39 +84,28 @@ def main(NUM_PARAM, seed, mean, sigma, simplex_num, itera):
     BETA = 2
     from matplotlib import pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
-    fig = plt.figure()                                                        
-    ax = Axes3D(fig)
+    import matplotlib.animation as animation
+    
     lim = 20
     split = 100
     x1 = np.linspace(-lim, lim, split)
     x2 = np.linspace(-lim, lim, split)
     X, Y = np.meshgrid(x1, x2)
     inputs = np.stack([X, Y], axis=-1)
+
+    
+    fig = plt.figure()                                                        
+    ax = Axes3D(fig)
     ax.plot_wireframe(X,
                       Y,
                       target_func(inputs)[...,0],
                       alpha=0.5)
     
     a = Nelder_Mead(NUM_PARAM, seed, mean, sigma, simplex_num)
-    """
-    ax.scatter(a.params[:,0],
-               a.params[:,1],
-               target_func(a.params)[...,0],
-               facecolors='red',
-               alpha=1)
-    """
+    
     print("init_params:", a.params)
     for i in range(itera):
-        #print("--------{}--------".format(i))
         a.update_opt(beta=BETA)
-        #print(a.result)
-        """
-        ax.scatter(a.params[:,0],
-                   a.params[:,1],
-                   target_func(a.params)[...,0],
-                   facecolors='red',
-                   alpha=1)
-        """
         #"""
         ax.scatter(a.center[0],
                    a.center[1],
@@ -132,8 +114,9 @@ def main(NUM_PARAM, seed, mean, sigma, simplex_num, itera):
                    alpha=1)
         plt.pause(0.1)
         #"""
-    print(a.params)
-    print(a.result)
+    print("Best params:{}, value:{}".format(a.result[0, :-1],
+                                            a.result[0, -1]))
+    plt.savefig("Trajectory_of_center.png")
     #"""
 
 def scipy_NM(NUM_PARAM, seed, mean, sigma):
@@ -152,7 +135,7 @@ if __name__ == '__main__':
     
     import time
     t = time.time()
-    main(NUM_PARAM=2, seed=0, mean=0, sigma=10, simplex_num=7, itera=100)
+    main(NUM_PARAM=2, seed=0, mean=0, sigma=10, simplex_num=6, itera=30)
     print("Time cumume:", time.time() - t)
 
     """
