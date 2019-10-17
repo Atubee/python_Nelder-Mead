@@ -2,15 +2,14 @@ import numpy as np
 from BenchMark_funcs import Five_well_potential_function as target_func
 
 class Nelder_Mead:
-    def __init__(self, num_param, mean=0, sigma=1):
+    def __init__(self, num_param, seed, mean=0, sigma=1):
         self.num_param = num_param
         self.center = None
         self.P_refl = None
         self.result = None
-        self.params = self.initialize_params(mean, sigma)
+        self.params = self.initialize_params(seed, mean, sigma)
         
-    def initialize_params(self, mean, sigma):   
-        seed = 0
+    def initialize_params(self, seed, mean, sigma):
         np.random.seed(seed)
         init_params = np.random.normal(loc=mean,
                                        scale=sigma,
@@ -24,7 +23,7 @@ class Nelder_Mead:
 
     def calc(self, alpha=1):
         self.result = self.result[np.argsort(self.result[:, -1])]#sorted on f(px)
-        center = np.mean(self.result[:, :self.num_param], axis=0)#, keepdims=True)#Calc center
+        center = np.mean(self.result[:-1, :self.num_param], axis=0)#, keepdims=True)#Calc center
         self.center = center
         center_h = center - self.result[-1, :self.num_param]
         self.center_h = center_h
@@ -35,15 +34,19 @@ class Nelder_Mead:
     def update_opt(self, beta=2, gamma=-0.5, delta=-0.5):
         self.result = self.func(self.params)
         self.calc()
-        
+        #print(self.result)
+        #print(self.center)
+        #print(self.P_refl)
+
         if self.P_refl[-1] < self.result[-2, -1] and self.P_refl[-1] >= self.result[0, -1]:
-            print("0")
+            #print("0")
             self.params = np.concatenate([self.result[:-1, :self.num_param],
                                           self.P_refl[None, :self.num_param]], axis=0)
             
         elif self.P_refl[-1] < self.result[0, -1]:
             expand_coord = self.center + beta * self.center_h
             P_expand = self.func(expand_coord[None])[0]
+            #print("P_expand:", P_expand)
             if P_expand[-1] < self.P_refl[-1]:
                 #print("1-1")
                 self.params = np.concatenate([self.result[:-1, :self.num_param],
@@ -56,6 +59,7 @@ class Nelder_Mead:
         elif self.P_refl[-1] >= self.result[-2, -1]:
             contract_coord = self.center + gamma * self.center_h
             P_contract = self.func(contract_coord[None])[0]
+            #print("P_contract:", P_contract)
             if P_contract[-1] < self.result[-1, -1]:
                 #print("2-1")
                 self.params = np.concatenate([self.result[:-1, :self.num_param],
@@ -63,18 +67,20 @@ class Nelder_Mead:
                 #print(self.params)
             else:
                 #print("2-2")
-                reduct = self.result[:, :self.num_param] - self.result[:1, :self.num_param] 
-                self.params = self.result[:, :self.num_param] + delta * reduct
+                reduct = self.result[1:, :self.num_param] - self.result[:1, :self.num_param]
+                reduct = self.result[1:, :self.num_param] + delta * reduct
+                #self.result[1:, :self.num_param] + delta * reduct
+                self.params = np.concatenate([self.result[:1, :self.num_param],
+                                              reduct], axis=0)
+                
         else:
             print("[Nelder_Mead]Error...")
             exit()
+        #print(self.params)   
         return 0
     
-def main():
-
-    BETA = 2     #上げるとよくなる？
-    NUM_PARAM = 2#上げるとよくなる？
-    
+def main(NUM_PARAM, seed, mean, sigma):
+    BETA = 2
     from matplotlib import pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
     fig = plt.figure()                                                        
@@ -87,8 +93,8 @@ def main():
                       Y,
                       target_func(inputs)[...,0],
                       alpha=0.5)
-
-    a = Nelder_Mead(NUM_PARAM, mean=0, sigma=10)
+    
+    a = Nelder_Mead(NUM_PARAM, seed, mean, sigma)
     """
     ax.scatter(a.params[:,0],
                a.params[:,1],
@@ -96,22 +102,23 @@ def main():
                facecolors='red',
                alpha=1)
     """
-    #"""
+    """
     ax.scatter(a.center[0],
                a.center[1],
                target_func(a.center[None])[...,0],
                facecolors='red',
                alpha=1)
-    #"""
-    
-    for i in range(100):
-        print(i)
+    """
+    print("init_params:", a.params)
+    for i in range(500):
+        #print("--------{}--------".format(i))
         a.update_opt(beta=BETA)
         ax.scatter(a.center[0],
                    a.center[1],
                    target_func(a.center[None])[...,0],
                    facecolors='red',
                    alpha=1)
+        #print(a.result)
         """
         ax.scatter(a.params[:,0],
                    a.params[:,1],
@@ -119,10 +126,23 @@ def main():
                    facecolors='red',
                    alpha=1)
         """
-        plt.pause(.1)
-        
+        #plt.pause(0.1)
+    print(a.params)
+    print(a.result)
     #"""
-if __name__ == '__main__':
-    main()
+
+def scipy_NM(NUM_PARAM, seed, mean, sigma):
+    from scipy.optimize import minimize
+    #"""
+    np.random.seed(seed)
+    init_params = np.random.normal(loc=mean,
+                                   scale=sigma,
+                                   size=(NUM_PARAM+1, NUM_PARAM))
+    print("init_params:", init_params)
+    res = minimize(target_func, init_params, method='nelder-mead')
+    print(res)
     
+if __name__ == '__main__':
+    main(NUM_PARAM=2, seed=2, mean=0, sigma=10)
+    scipy_NM(NUM_PARAM=2, seed=2, mean=0, sigma=10)
     
