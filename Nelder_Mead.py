@@ -1,19 +1,24 @@
 import numpy as np
 from BenchMark_funcs import Five_well_potential_function as target_func
+#from BenchMark_funcs import Ackley_function as target_func
+#from BenchMark_funcs import Banana as target_func
+#from BenchMark_funcs import Eggholder_function as target_func
 
 class Nelder_Mead:
-    def __init__(self, num_param, seed, mean=0, sigma=1):
+    def __init__(self, num_param, seed, mean=0, sigma=1, simplex_num=None):
         self.num_param = num_param
         self.center = None
         self.P_refl = None
         self.result = None
-        self.params = self.initialize_params(seed, mean, sigma)
+        self.params = self.initialize_params(seed, mean, sigma, simplex_num)
         
-    def initialize_params(self, seed, mean, sigma):
+    def initialize_params(self, seed, mean, sigma, simplex_num):
         np.random.seed(seed)
+        if simplex_num is None:
+            simplex_num = self.num_param+1
         init_params = np.random.normal(loc=mean,
                                        scale=sigma,
-                                       size=(self.num_param+1, self.num_param))
+                                       size=(simplex_num, self.num_param))
         return init_params
 
     def func(self, inputs):
@@ -31,7 +36,7 @@ class Nelder_Mead:
         self.P_refl = self.func(refl_coord[None])[0]#[p_refl, f(p_refl)]
         return 0
 
-    def update_opt(self, beta=2, gamma=-0.5, delta=-0.5):
+    def update_opt(self, beta=2, gamma=-0.5, delta=0.5):
         self.result = self.func(self.params)
         self.calc()
         #print(self.result)
@@ -67,8 +72,11 @@ class Nelder_Mead:
                 #print(self.params)
             else:
                 #print("2-2")
+                """
                 reduct = self.result[1:, :self.num_param] - self.result[:1, :self.num_param]
                 reduct = self.result[1:, :self.num_param] + delta * reduct
+                """
+                reduct = (self.result[1:, :self.num_param] + self.result[:1, :self.num_param]) * delta
                 #self.result[1:, :self.num_param] + delta * reduct
                 self.params = np.concatenate([self.result[:1, :self.num_param],
                                               reduct], axis=0)
@@ -79,14 +87,16 @@ class Nelder_Mead:
         #print(self.params)   
         return 0
     
-def main(NUM_PARAM, seed, mean, sigma):
+def main(NUM_PARAM, seed, mean, sigma, simplex_num, itera):
     BETA = 2
     from matplotlib import pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
     fig = plt.figure()                                                        
     ax = Axes3D(fig)
-    x1 = np.linspace(-20, 20, 100)
-    x2 = np.linspace(-20, 20, 100)
+    lim = 20
+    split = 100
+    x1 = np.linspace(-lim, lim, split)
+    x2 = np.linspace(-lim, lim, split)
     X, Y = np.meshgrid(x1, x2)
     inputs = np.stack([X, Y], axis=-1)
     ax.plot_wireframe(X,
@@ -94,7 +104,7 @@ def main(NUM_PARAM, seed, mean, sigma):
                       target_func(inputs)[...,0],
                       alpha=0.5)
     
-    a = Nelder_Mead(NUM_PARAM, seed, mean, sigma)
+    a = Nelder_Mead(NUM_PARAM, seed, mean, sigma, simplex_num)
     """
     ax.scatter(a.params[:,0],
                a.params[:,1],
@@ -102,22 +112,10 @@ def main(NUM_PARAM, seed, mean, sigma):
                facecolors='red',
                alpha=1)
     """
-    """
-    ax.scatter(a.center[0],
-               a.center[1],
-               target_func(a.center[None])[...,0],
-               facecolors='red',
-               alpha=1)
-    """
     print("init_params:", a.params)
-    for i in range(500):
+    for i in range(itera):
         #print("--------{}--------".format(i))
         a.update_opt(beta=BETA)
-        ax.scatter(a.center[0],
-                   a.center[1],
-                   target_func(a.center[None])[...,0],
-                   facecolors='red',
-                   alpha=1)
         #print(a.result)
         """
         ax.scatter(a.params[:,0],
@@ -126,7 +124,14 @@ def main(NUM_PARAM, seed, mean, sigma):
                    facecolors='red',
                    alpha=1)
         """
-        #plt.pause(0.1)
+        #"""
+        ax.scatter(a.center[0],
+                   a.center[1],
+                   target_func(a.center[None])[...,0],
+                   facecolors='red',
+                   alpha=1)
+        plt.pause(0.1)
+        #"""
     print(a.params)
     print(a.result)
     #"""
@@ -143,6 +148,17 @@ def scipy_NM(NUM_PARAM, seed, mean, sigma):
     print(res)
     
 if __name__ == '__main__':
-    main(NUM_PARAM=2, seed=2, mean=0, sigma=10)
-    scipy_NM(NUM_PARAM=2, seed=2, mean=0, sigma=10)
+    #My implimantation
     
+    import time
+    t = time.time()
+    main(NUM_PARAM=2, seed=0, mean=0, sigma=10, simplex_num=7, itera=100)
+    print("Time cumume:", time.time() - t)
+
+    """
+    #Scipy implimantation
+
+    t = time.time()
+    scipy_NM(NUM_PARAM=2, seed=0, mean=0, sigma=100)
+    print("Time cumume scipy:", time.time() - t)
+    """
