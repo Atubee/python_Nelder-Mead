@@ -19,6 +19,7 @@ class Nelder_Mead:
         init_params = np.random.normal(loc=mean,
                                        scale=sigma,
                                        size=(simplex_num, self.num_param))
+        self.result = self.func(init_params)
         return init_params
 
     def func(self, inputs):
@@ -28,22 +29,23 @@ class Nelder_Mead:
 
     def calc(self, alpha=1):
         self.result = self.result[np.argsort(self.result[:, -1])]#sorted on f(px)
-        center = np.mean(self.result[:-1, :self.num_param], axis=0)#, keepdims=True)#Calc center
+        center = np.mean(self.result[:-1, :-1], axis=0)#, keepdims=True)#Calc center
         self.center = center
-        center_h = center - self.result[-1, :self.num_param]
+        center_h = center - self.result[-1, :-1]
         self.center_h = center_h
         refl_coord = center + alpha * (center_h)#[[p_refl]]
         self.P_refl = self.func(refl_coord[None])[0]#[p_refl, f(p_refl)]
         return 0
 
     def update_opt(self, beta=2, gamma=-0.5, delta=0.5):
-        self.result = self.func(self.params)
+        #self.result = self.func(self.params)
         self.calc()
 
         if self.P_refl[-1] < self.result[-2, -1] and self.P_refl[-1] >= self.result[0, -1]:
             #print("0")
-            self.params = np.concatenate([self.result[:-1, :self.num_param],
-                                          self.P_refl[None, :self.num_param]], axis=0)
+            self.result = np.concatenate([self.result[:-1, :],
+                                          self.P_refl[None,:]], axis=0)
+            self.params = self.result[..., :-1]
             
         elif self.P_refl[-1] < self.result[0, -1]:
             expand_coord = self.center + beta * self.center_h
@@ -51,12 +53,14 @@ class Nelder_Mead:
             #print("P_expand:", P_expand)
             if P_expand[-1] < self.P_refl[-1]:
                 #print("1-1")
-                self.params = np.concatenate([self.result[:-1, :self.num_param],
-                                              P_expand[None, :self.num_param]], axis=0)
+                self.result = np.concatenate([self.result[:-1, :],
+                                              self.P_expand[None,:]], axis=0)
+                self.params = self.result[..., :-1]
             else:
                 #print("1-2")
-                self.params = np.concatenate([self.result[:-1, :self.num_param],
-                                              self.P_refl[None, :self.num_param]], axis=0)
+                self.result = np.concatenate([self.result[:-1, :],
+                                              self.P_refl[None,:]], axis=0)
+                self.params = self.result[..., :-1]
                 
         elif self.P_refl[-1] >= self.result[-2, -1]:
             contract_coord = self.center + gamma * self.center_h
@@ -64,15 +68,17 @@ class Nelder_Mead:
             #print("P_contract:", P_contract)
             if P_contract[-1] < self.result[-1, -1]:
                 #print("2-1")
-                self.params = np.concatenate([self.result[:-1, :self.num_param],
-                                              P_contract[None, :self.num_param]], axis=0)
+                self.result = np.concatenate([self.result[:-1, :],
+                                              P_contract[None, :]], axis=0)
+                self.params = self.result[..., :-1]
                 #print(self.params)
             else:
                 #print("2-2")
-                reduct = (self.result[1:, :self.num_param] + self.result[:1, :self.num_param]) * delta
+                reduct = (self.result[1:, :-1] + self.result[:1, :-1]) * delta
                 #self.result[1:, :self.num_param] + delta * reduct
-                self.params = np.concatenate([self.result[:1, :self.num_param],
+                self.params = np.concatenate([self.result[:1, :-1],
                                               reduct], axis=0)
+                self.result = self.func(self.params)
                 
         else:
             print("[Nelder_Mead]Error...")
