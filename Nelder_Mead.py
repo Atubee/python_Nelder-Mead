@@ -78,7 +78,12 @@ class Nelder_Mead:
                 #self.result[1:, :self.num_param] + delta * reduct
                 self.params = np.concatenate([self.result[:1, :-1],
                                               reduct], axis=0)
-                self.result = self.func(self.params)
+                #"""
+                tmp_result = self.func(self.params[1:])
+                self.result = np.concatenate([self.result[:1, :],
+                                              tmp_result], axis=0)
+                #"""
+                #self.result = self.func(self.params)
                 
         else:
             print("[Nelder_Mead]Error...")
@@ -112,14 +117,14 @@ def main(NUM_PARAM, seed, mean, sigma, simplex_num, itera):
     print("init_params:", a.params)
     for i in range(itera):
         a.update_opt(beta=BETA)
-        #"""
+        """
         ax.scatter(a.center[0],
                    a.center[1],
                    target_func(a.center[None])[...,0],
                    facecolors='red',
                    alpha=1)
         plt.pause(0.1)
-        #"""
+        """
     print("Best params:{}, value:{}".format(a.result[0, :-1],
                                             a.result[0, -1]))
     plt.savefig("Trajectory_of_center.png")
